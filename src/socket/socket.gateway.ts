@@ -2,43 +2,54 @@ import {
   WebSocketGateway,
   SubscribeMessage,
   MessageBody,
+  ConnectedSocket,
+  WebSocketServer,
+  OnGatewayInit,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { SocketService } from './socket.service';
-import { CreateSocketDto } from './dto/create-socket.dto';
-import { UpdateSocketDto } from './dto/update-socket.dto';
+import { Server, Socket } from 'socket.io';
+import { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
+import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
 
 @WebSocketGateway({ cors: true })
-export class SocketGateway {
-  constructor(private readonly socketService: SocketService) {}
+export class SocketGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
+  constructor(
+    private readonly socketService: SocketService,
+    private cacheManager: RedisCacheService,
+    @InjectQueue('msg') private readonly queue: Queue,
+  ) {}
 
-  @SubscribeMessage('createSocket')
-  create(@MessageBody() createSocketDto: CreateSocketDto) {
-    return this.socketService.create(createSocketDto);
+  @WebSocketServer() server: Server;
+
+  handleConnection(client: Socket) {
+    this.server.on('connection', async (socket: Socket) => {
+      //
+    });
   }
 
-  @SubscribeMessage('findAllSocket')
-  findAll() {
-    return this.socketService.findAll();
-  }
-
-  @SubscribeMessage('findOneSocket')
-  findOne(@MessageBody() id: number) {
-    return this.socketService.findOne(id);
-  }
-
-  @SubscribeMessage('updateSocket')
-  update(@MessageBody() updateSocketDto: UpdateSocketDto) {
-    return this.socketService.update(updateSocketDto.id, updateSocketDto);
-  }
-
-  @SubscribeMessage('removeSocket')
-  remove(@MessageBody() id: number) {
-    return this.socketService.remove(id);
-  }
   @SubscribeMessage('events')
-  handleMsg(@MessageBody() data: any): any {
-    return {
-      data,
-    };
+  async handleMsg(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
+    this.socketService.msgService(data, client);
+  }
+
+  @SubscribeMessage('connected')
+  async handleMsg1(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    await this.socketService.afterConnected(data, client);
+  }
+
+  afterInit(server: any): any {
+    //
+  }
+
+  async handleDisconnect(client: Socket) {
+    await this.socketService.handleDisconnect(client);
   }
 }
