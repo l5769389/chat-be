@@ -7,9 +7,9 @@ import {
   Param,
   Delete,
   Request,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CACHE_MANAGER, CacheKey } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
@@ -27,7 +27,7 @@ export class UserController {
   @Public()
   @Get('/test')
   async create() {
-    this.cacheManager.set('abc', 3);
+    await this.cacheManager.set('abc', 3);
   }
 
   @Patch(':id')

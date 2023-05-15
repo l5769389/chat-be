@@ -1,12 +1,11 @@
-import { FileService } from './../file/file.service';
+import { FileService } from '../file/file.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { WebSocketServer } from '@nestjs/websockets';
 import { Queue } from 'bull';
-import { writeFile } from 'fs';
-import { resolve } from 'path';
-import { Server, Socket } from 'socket.io';
+import { Socket } from 'socket.io';
 import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
+import { RecentChatService } from '../recent-chat/recent-chat.service';
+import { ChatType } from '../types/types';
 
 enum MsgFileType {
   Text = 'text',
@@ -26,6 +25,7 @@ export class SocketService {
     @InjectQueue('msg') private readonly queue: Queue,
 
     private fileService: FileService,
+    private recentChatService: RecentChatService,
   ) {}
 
   async handleDisconnect(client: Socket) {
@@ -63,9 +63,16 @@ export class SocketService {
     const socketId: string = await this.cacheManager.get(toUserId);
     //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
     if (socketId) {
-      this.sendOnlineMsg(client, socketId, fromUserId, msg, timestamp);
+      await this.sendOnlineMsg(
+        client,
+        socketId,
+        fromUserId,
+        msg,
+        timestamp,
+        toUserId,
+      );
     } else {
-      this.sendOfflineMsg(
+      await this.sendOfflineMsg(
         client,
         socketId,
         fromUserId,
@@ -82,12 +89,23 @@ export class SocketService {
     fromUserId,
     msg: MsgType,
     timestamp: string,
+    toUserId,
   ) {
     client.to(socketId).emit('msg', {
       fromUserId,
       msg,
       timestamp,
     });
+    await this.recentChatService.updateRecentChat(
+      fromUserId,
+      ChatType.Single,
+      toUserId,
+    );
+    await this.recentChatService.updateRecentChat(
+      toUserId,
+      ChatType.Single,
+      fromUserId,
+    );
   }
 
   async sendOfflineMsg(
@@ -100,7 +118,8 @@ export class SocketService {
   ) {
     if (msg.type === MsgFileType.Text) {
       console.log('对方离线，消息存入redis中');
-      await this.cacheManager.update(toUserId, {
+      const msgKey = `msg_${toUserId}`;
+      await this.cacheManager.update(msgKey, {
         fromUserId,
         msg,
       });
@@ -116,7 +135,8 @@ export class SocketService {
         const new_msg = Object.assign({}, msg, {
           content: filePath,
         });
-        await this.cacheManager.update(toUserId, {
+        const msgKey = `msg_${toUserId}`;
+        await this.cacheManager.update(msgKey, {
           fromUserId,
           msg: new_msg,
         });

@@ -10,12 +10,12 @@ import { AuthModule } from './auth/auth.module';
 import { RelationEntity } from './entities/relation.entity';
 import { UserEntity } from './entities/user.entity';
 import { JwtGuard } from './auth/guard/jwt/jwt.guard';
-import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bull';
-import * as redisStore from 'cache-manager-redis-store';
-import type { RedisClientOptions } from 'redis';
+
 import { RedisCacheModule } from './redis-cache/redis-cache.module';
 import { FileModule } from './file/file.module';
+import { ChatRoomModule } from './chat-room/chat-room.module';
+import { RecentChatModule } from './recent-chat/recent-chat.module';
 
 const DbModule = TypeOrmModule.forRoot({
   type: 'mysql',
@@ -46,6 +46,8 @@ const Bull = BullModule.forRoot({
     Bull,
     RedisCacheModule,
     FileModule,
+    ChatRoomModule,
+    RecentChatModule,
   ],
   controllers: [AppController],
   providers: [

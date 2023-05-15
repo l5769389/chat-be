@@ -17,13 +17,32 @@ export class RedisCacheService {
     await this.cacheManager.del(key);
   }
   async update(key: string, val: unknown) {
-    const msgKey = `msg_${key}`;
-    const history_msg = JSON.parse(await this.cacheManager.get(msgKey));
-    if (history_msg == null) {
-      await this.set(msgKey, JSON.stringify([val]));
+    const history = JSON.parse(await this.cacheManager.get(key));
+    if (history == null) {
+      await this.set(key, JSON.stringify([val]));
     } else {
-      history_msg.push(val);
-      await this.set(msgKey, JSON.stringify(history_msg));
+      history.push(val);
+      await this.set(key, JSON.stringify(history));
+    }
+  }
+
+  async updateUnique(key: string, uniqueKeyAttr: string, val: unknown) {
+    const history = JSON.parse(await this.cacheManager.get(key));
+    if (history === null) {
+      await this.set(key, JSON.stringify([val]));
+      return;
+    }
+    const targetVal = val[uniqueKeyAttr];
+    const index = history.findIndex(
+      (item) => item[uniqueKeyAttr] === targetVal,
+    );
+    if (index === -1) {
+      history.unshift(val);
+      await this.set(key, JSON.stringify(history));
+    } else {
+      history.splice(index, 1);
+      history.unshift(val);
+      await this.set(key, JSON.stringify(history));
     }
   }
 }
