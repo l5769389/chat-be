@@ -1,0 +1,21 @@
+http:
+    host: 'localhost'
+    port: 3000
+
+server:
+    host: &host '192.168.71.82'
+
+mysql:
+    host: *host
+    port: 3306
+    username: 'root'
+    password: '123456'
+    database: 'chat_db'
+
+redis:
+    host: *host
+    port: 6379
+    auth_pass: '123456'
+    db: 0
+    ttl: 0
+

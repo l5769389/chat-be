@@ -16,25 +16,30 @@ import { RedisCacheModule } from './redis-cache/redis-cache.module';
 import { FileModule } from './file/file.module';
 import { ChatRoomModule } from './chat-room/chat-room.module';
 import { RecentChatModule } from './recent-chat/recent-chat.module';
+import { ConfigModule } from '@nestjs/config';
+import configuration from './config/configuration';
 
-const DbModule = TypeOrmModule.forRoot({
+const { mysql, redis } = configuration();
+
+const mysqlConfig = Object.assign({}, mysql, {
   type: 'mysql',
-  host: 'localhost',
-  port: 3306,
-  username: 'root',
-  password: '123456',
-  database: 'chat_db',
   entities: [UserEntity, RelationEntity],
   synchronize: true,
   logging: false,
 });
+const DbModule = TypeOrmModule.forRoot(mysqlConfig);
 
 const Bull = BullModule.forRoot({
   redis: {
-    host: 'localhost',
-    port: 6379,
-    password: '123456',
+    host: redis.host,
+    port: redis.port,
+    password: redis.auth_pass,
   },
+});
+
+const Config = ConfigModule.forRoot({
+  isGlobal: true,
+  load: [configuration],
 });
 
 @Module({
@@ -48,6 +53,7 @@ const Bull = BullModule.forRoot({
     FileModule,
     ChatRoomModule,
     RecentChatModule,
+    Config,
   ],
   controllers: [AppController],
   providers: [
