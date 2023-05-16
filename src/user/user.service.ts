@@ -76,4 +76,14 @@ export class UserService {
       friends: friends,
     };
   }
+
+  async getUsersInfo(userIds: Array<number>) {
+    const usersInfo = {};
+    for (const userId of userIds) {
+      const info = await this.findUser(userId);
+      info.password = '';
+      usersInfo[userId] = info;
+    }
+    return usersInfo;
+  }
 }

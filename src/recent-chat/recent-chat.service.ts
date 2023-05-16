@@ -8,12 +8,23 @@ export class RecentChatService {
   constructor(private cacheManager: RedisCacheService) {}
   async getRecentChat(userId: number) {
     const key = `recent_chat_userId_${userId}`;
-    const list = JSON.parse(await this.cacheManager.get(key));
-    if (list) {
-      return list;
-    } else {
-      return [];
-    }
+    return [
+      {
+        type: 'Single',
+        id: 2,
+      },
+      {
+        type: 'Multi',
+        joinIds: [2, 3, 4],
+        id: 'c-1-2-12344',
+      },
+    ];
+    // const list = JSON.parse(await this.cacheManager.get(key));
+    // if (list) {
+    //   return list;
+    // } else {
+    //   return [];
+    // }
   }
 
   async updateRecentChat(

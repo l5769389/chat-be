@@ -24,12 +24,6 @@ export class UserController {
     private cacheManager: Cache,
   ) {}
 
-  @Public()
-  @Get('/test')
-  async create() {
-    await this.cacheManager.set('abc', 3);
-  }
-
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(+id, updateUserDto);
@@ -43,5 +37,12 @@ export class UserController {
   @Get('/user')
   async getUserInfo(@Request() req) {
     return this.userService.getUserInfo(req.user.userId);
+  }
+
+  @Public()
+  @Get('/users')
+  async getUsersInfo(@Query('ids') ids: string) {
+    const id_arr = ids.split(',').map((item) => Number.parseInt(item));
+    return this.userService.getUsersInfo(id_arr);
   }
 }
