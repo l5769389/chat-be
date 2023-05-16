@@ -23,7 +23,6 @@ export class SocketService {
   constructor(
     private cacheManager: RedisCacheService,
     @InjectQueue('msg') private readonly queue: Queue,
-
     private fileService: FileService,
     private recentChatService: RecentChatService,
   ) {}

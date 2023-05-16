@@ -12,7 +12,12 @@ export class RecentChatController {
 
   @Patch('/')
   updateRecentChat(@Body() info) {
-    const { userId, chatType, id } = info;
-    return this.recentChatService.updateRecentChat(userId, chatType, id);
+    const { userId, chatType, id, chatName } = info;
+    return this.recentChatService.updateRecentChat(
+      userId,
+      chatType,
+      id,
+      chatName,
+    );
   }
 }

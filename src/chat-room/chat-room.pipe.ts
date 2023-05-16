@@ -20,6 +20,7 @@ export class ChatRoomPipe implements PipeTransform {
     }
     return value;
   }
+
   private toValidate(metatype): boolean {
     const types = [String, Boolean, Number, Array, Object];
     return types.includes(metatype);

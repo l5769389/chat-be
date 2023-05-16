@@ -6,6 +6,7 @@ enum ChatType {
 interface RecentChatType {
   type: ChatType;
   id: number | string;
+  name: string;
 }
 
 export { ChatType, RecentChatType };

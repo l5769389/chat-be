@@ -18,12 +18,13 @@ import { ChatRoomModule } from './chat-room/chat-room.module';
 import { RecentChatModule } from './recent-chat/recent-chat.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
+import { ChatroomEntity } from './entities/chatroom.entity';
 
 const { mysql, redis } = configuration();
 
 const mysqlConfig = Object.assign({}, mysql, {
   type: 'mysql',
-  entities: [UserEntity, RelationEntity],
+  entities: [UserEntity, RelationEntity, ChatroomEntity],
   synchronize: true,
   logging: false,
 });

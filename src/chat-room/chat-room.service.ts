@@ -2,18 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 import { Success } from '../common/Success';
-import { SocketService } from '../socket/socket.service';
 import { RecentChatService } from '../recent-chat/recent-chat.service';
+import { Repository } from 'typeorm';
+import { ChatroomEntity } from '../entities/chatroom.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class ChatRoomService {
-  constructor(private recentChatService: RecentChatService) {}
-  create(createChatRoomDto: CreateChatRoomDto) {
-    const { createId, joinIds } = createChatRoomDto;
-    const join = joinIds.join('|');
-    const timestamp = new Date().getTime();
-    const roomId = `c:${createId}_join:${join}_time:${timestamp}`;
+  constructor(
+    private recentChatService: RecentChatService,
+    @InjectRepository(ChatroomEntity)
+    private chatroomRepository: Repository<ChatroomEntity>,
+  ) {}
 
+  async create(createChatRoomDto: CreateChatRoomDto) {
+    const { createUserId, joinUserId: joinIds } = createChatRoomDto;
+    const timestamp = new Date().getTime();
+    const roomId = `c:${createUserId}_join:${joinIds}_time:${timestamp}`;
+    createChatRoomDto.roomId = roomId;
+    await this.chatroomRepository.save(createChatRoomDto);
     return new Success({
       roomId: roomId,
       joinIds: joinIds,

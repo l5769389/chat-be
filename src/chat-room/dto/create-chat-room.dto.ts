@@ -2,6 +2,8 @@ import { IsNumber, IsString } from 'class-validator';
 
 export class CreateChatRoomDto {
   @IsNumber()
-  createId: number;
-  joinIds: Array<number>;
+  createUserId: number;
+  joinUserId: string;
+  chatRoomName: string;
+  roomId: string;
 }
