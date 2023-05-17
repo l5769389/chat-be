@@ -2,21 +2,11 @@ import { FileService } from '../file/file.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
 import { RecentChatService } from '../recent-chat/recent-chat.service';
-import { ChatType } from '../types/types';
-
-enum MsgFileType {
-  Text = 'text',
-  IMG = 'img',
-}
-
-interface MsgType {
-  type: MsgFileType.Text | MsgFileType.IMG;
-  content: string | Buffer;
-  timestamp: string;
-}
+import { ChatType, MsgFileType, MsgType } from '../types/types';
+import { WebSocketServer } from '@nestjs/websockets';
 
 @Injectable()
 export class SocketService {
@@ -26,6 +16,8 @@ export class SocketService {
     private fileService: FileService,
     private recentChatService: RecentChatService,
   ) {}
+
+  server: Server;
 
   async handleDisconnect(client: Socket) {
     const userId: string = await this.cacheManager.get(client.id);
@@ -46,69 +38,58 @@ export class SocketService {
     await this.cacheManager.del(`msg_${data.userId}`);
   }
 
-  async msgService(data: any, client: Socket) {
+  async msgServiceSingle(data: any) {
     const { fromUserId, toUserId, msg, msgType, timestamp } = data;
-    console.log(`收到socket消息,type:${msgType}`);
-    await this.sendMsg(client, fromUserId, toUserId, msg, timestamp);
+    console.log(`收到socket消息,${JSON.stringify(data)}`);
+    await this.sendMsg({ fromUserId, toUserId, msg, timestamp });
   }
 
-  async sendMsg(
-    client: Socket,
-    fromUserId,
-    toUserId,
-    msg: MsgType,
-    timestamp: string,
-  ) {
+  async msgServiceMulti(data: any, client: Socket) {
+    const { fromUserId, toUserId, msg, msgType, timestamp } = data;
+    console.log(`收到socket消息,${JSON.stringify(data)}`);
+    // await this.sendMsg(fromUserId, toUserId, msg, timestamp);
+  }
+
+  async sendToGroup(roomId, msg, joinUserIds: Array<number>) {
+    console.log(roomId, msg, joinUserIds);
+  }
+
+  async sendMsg({ fromUserId, toUserId, msg, timestamp, roomId = toUserId }) {
     const socketId: string = await this.cacheManager.get(toUserId);
     //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
     if (socketId) {
-      await this.sendOnlineMsg(
-        client,
-        socketId,
-        fromUserId,
-        msg,
-        timestamp,
-        toUserId,
-      );
+      await this.sendOnlineMsg(socketId, fromUserId, msg, timestamp, toUserId);
     } else {
-      await this.sendOfflineMsg(
-        client,
-        socketId,
-        fromUserId,
-        toUserId,
-        msg,
-        timestamp,
-      );
+      await this.sendOfflineMsg(socketId, fromUserId, toUserId, msg, timestamp);
     }
   }
 
   async sendOnlineMsg(
-    client: Socket,
     socketId,
     fromUserId,
     msg: MsgType,
     timestamp: string,
     toUserId,
   ) {
-    client.to(socketId).emit('msg', {
+    console.log(`向${socketId}发出msg消息`);
+    this.server.to(socketId).emit('msg', {
       fromUserId,
       msg,
       timestamp,
     });
-    await this.recentChatService.updateRecentChat(
-      fromUserId,
-      ChatType.Single,
-      toUserId,
-    );
-    await this.recentChatService.updateRecentChat(
-      toUserId,
-      ChatType.Single,
-      fromUserId,
-    );
+    await this.recentChatService.updateRecentChat({
+      userId: fromUserId,
+      chatType: ChatType.Single,
+      chatId: toUserId,
+    });
+    await this.recentChatService.updateRecentChat({
+      userId: toUserId,
+      chatType: ChatType.Single,
+      chatId: fromUserId,
+    });
   }
 
   async sendOfflineMsg(
-    client: Socket,
     socketId,
     fromUserId,
     toUserId,
@@ -143,19 +124,19 @@ export class SocketService {
     }
   }
 
-  async sendMsgHistory(client: Socket, fromUserId, toUserId, msg: MsgType) {
+  async sendMsgHistory(fromUserId, toUserId, msg: MsgType) {
     const socketId: string = await this.cacheManager.get(toUserId);
     // 客户端上线后发送历史消息。
     const { type, content, timestamp } = msg;
     if (type === MsgFileType.Text) {
-      client.emit('msg', {
+      this.server.to(toUserId).emit('msg', {
         fromUserId,
         msg,
       });
     } else {
       const blob = await this.fileService.filePath2Blob(content as string);
       msg.content = blob;
-      client.emit('msg', {
+      this.server.to(toUserId).emit('msg', {
         fromUserId,
         msg,
       });
@@ -165,7 +146,6 @@ export class SocketService {
   async sendAllHistoryMsg(client: Socket, history, toUserId) {
     for (const historyItem of history) {
       await this.sendMsgHistory(
-        client,
         historyItem.fromUserId,
         toUserId,
         historyItem.msg,
@@ -177,5 +157,9 @@ export class SocketService {
     const history = JSON.parse(await this.cacheManager.get(`msg_${userId}`));
     console.log(`该用户的历史消息为：${JSON.stringify(history)}`);
     return history;
+  }
+
+  initInstance(server: Server) {
+    this.server = server;
   }
 }

@@ -7,39 +7,40 @@ import { ChatType, RecentChatType } from '../types/types';
 export class RecentChatService {
   constructor(private cacheManager: RedisCacheService) {}
 
-  async getRecentChat(userId: number) {
-    const key = `recent_chat_userId_${userId}`;
-    return [
-      {
-        type: 'Single',
-        id: 2,
-      },
-      {
-        type: 'Multi',
-        joinIds: [2, 3, 4],
-        id: 'c-1-2-12344',
-        name: 'ssss',
-      },
-    ];
-    // const list = JSON.parse(await this.cacheManager.get(key));
-    // if (list) {
-    //   return list;
-    // } else {
-    //   return [];
-    // }
+  getChatRecentKey(userId: number) {
+    return `recent_chat_userId_${userId}`;
   }
 
-  async updateRecentChat(
-    userId: number,
-    chatType: ChatType,
-    id: number | string,
+  async getRecentChat(userId: number) {
+    const key = this.getChatRecentKey(userId);
+    const list = JSON.parse(await this.cacheManager.get(key));
+    if (list) {
+      return list;
+    } else {
+      return [];
+    }
+  }
+
+  /**
+   * 更新key为 userId的在redis中记录的最近的聊天对象列表。
+   * @param userId
+   * @param chatType
+   * @param id
+   * @param chatName
+   */
+  async updateRecentChat({
+    userId,
+    chatType,
+    chatId,
     chatName = 'default',
-  ) {
-    const key = `recent_chat_userId_${userId}`;
+    joinIds = [],
+  }) {
+    const key = this.getChatRecentKey(userId);
     const newOne: RecentChatType = {
       type: chatType,
-      id: id,
+      id: chatId,
       name: chatName,
+      joinIds: joinIds,
     };
     await this.cacheManager.updateUnique(key, 'id', newOne);
     return this.getRecentChat(userId);

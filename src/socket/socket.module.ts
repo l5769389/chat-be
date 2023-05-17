@@ -21,5 +21,6 @@ import { RecentChatService } from '../recent-chat/recent-chat.service';
     FileService,
     RecentChatService,
   ],
+  exports: [SocketService],
 })
 export class SocketModule {}

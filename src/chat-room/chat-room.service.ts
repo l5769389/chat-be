@@ -6,6 +6,8 @@ import { RecentChatService } from '../recent-chat/recent-chat.service';
 import { Repository } from 'typeorm';
 import { ChatroomEntity } from '../entities/chatroom.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { SocketService } from '../socket/socket.service';
+import { ChatType, MsgFileType, MsgType } from '../types/types';
 
 @Injectable()
 export class ChatRoomService {
@@ -13,14 +15,33 @@ export class ChatRoomService {
     private recentChatService: RecentChatService,
     @InjectRepository(ChatroomEntity)
     private chatroomRepository: Repository<ChatroomEntity>,
+    private socketService: SocketService,
   ) {}
 
   async create(createChatRoomDto: CreateChatRoomDto) {
-    const { createUserId, joinUserId: joinIds } = createChatRoomDto;
+    const {
+      createUserId,
+      joinUserId: joinIds,
+      chatRoomName,
+    } = createChatRoomDto;
     const timestamp = new Date().getTime();
     const roomId = `c:${createUserId}_join:${joinIds}_time:${timestamp}`;
     createChatRoomDto.roomId = roomId;
     await this.chatroomRepository.save(createChatRoomDto);
+    const msg: MsgType = {
+      type: MsgFileType.Text,
+      content: '',
+      timestamp: timestamp.toString(),
+    };
+    const ids = joinIds.split(',').map((item) => Number.parseInt(item));
+    this.socketService.sendToGroup(roomId, msg, ids);
+    this.recentChatService.updateRecentChat({
+      userId: createUserId,
+      chatType: ChatType.Multi,
+      chatId: roomId,
+      chatName: chatRoomName,
+      joinIds: ids,
+    });
     return new Success({
       roomId: roomId,
       joinIds: joinIds,

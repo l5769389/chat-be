@@ -32,9 +32,20 @@ export class SocketGateway
     });
   }
 
-  @SubscribeMessage('events')
-  async handleMsg(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
-    this.socketService.msgService(data, client);
+  @SubscribeMessage('SingleMsg')
+  async handleSingleMsg(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ) {
+    await this.socketService.msgServiceSingle(data);
+  }
+
+  @SubscribeMessage('MultiMsg')
+  async handleMultiMsg(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ) {
+    await this.socketService.msgServiceMulti(data, client);
   }
 
   @SubscribeMessage('connected')
@@ -46,7 +57,7 @@ export class SocketGateway
   }
 
   afterInit(server: any): any {
-    //
+    this.socketService.initInstance(server);
   }
 
   async handleDisconnect(client: Socket) {

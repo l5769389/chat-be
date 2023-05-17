@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Request, Query, Body } from '@nestjs/common';
+import { Controller, Get, Patch, Query, Body } from '@nestjs/common';
 import { RecentChatService } from './recent-chat.service';
 
 @Controller('recent-chat')
@@ -13,11 +13,11 @@ export class RecentChatController {
   @Patch('/')
   updateRecentChat(@Body() info) {
     const { userId, chatType, id, chatName } = info;
-    return this.recentChatService.updateRecentChat(
+    return this.recentChatService.updateRecentChat({
       userId,
       chatType,
-      id,
+      chatId: id,
       chatName,
-    );
+    });
   }
 }
