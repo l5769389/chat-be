@@ -28,13 +28,9 @@ export class ChatRoomService {
     const roomId = `c:${createUserId}_join:${joinIds}_time:${timestamp}`;
     createChatRoomDto.roomId = roomId;
     await this.chatroomRepository.save(createChatRoomDto);
-    const msg: MsgType = {
-      type: MsgFileType.Text,
-      content: '',
-      timestamp: timestamp.toString(),
-    };
     const ids = joinIds.split(',').map((item) => Number.parseInt(item));
-    this.socketService.sendToGroup(roomId, msg, ids);
+    // 告知每一个客户端被拉进了一个群
+    this.socketService.joinUserToRoom(createUserId, roomId, ids);
     this.recentChatService.updateRecentChat({
       userId: createUserId,
       chatType: ChatType.Multi,

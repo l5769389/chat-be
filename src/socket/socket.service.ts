@@ -15,32 +15,37 @@ export class SocketService {
     @InjectQueue('msg') private readonly queue: Queue,
     private fileService: FileService,
     private recentChatService: RecentChatService,
-  ) {}
+  ) {
+    this.socketMap = new Map<number, Socket>();
+  }
 
   server: Server;
+  socketMap: Map<number, Socket>; //登录进来的socket实例。
 
   async handleDisconnect(client: Socket) {
     const userId: string = await this.cacheManager.get(client.id);
     console.log(`断开链接,socketId: ${client.id},userId: ${userId}`);
     await this.cacheManager.del(client.id);
     await this.cacheManager.del(userId);
+    this.socketMap.delete(Number.parseInt(userId));
   }
 
   async afterConnected(data: any, client: Socket) {
     // 收到连接信息,来保存用户的id和会话。
     console.log('connected', data, client.id);
+    await this.socketMap.set(data.userId, client);
     await this.cacheManager.set(data.userId, client.id);
     await this.cacheManager.set(client.id, data.userId);
     const history = await this.findHistoryMsg(data.userId);
     if (history) {
-      await this.sendAllHistoryMsg(client, history, data.userId);
+      await this.sendAllHistoryMsg(data.userId, history);
     }
     await this.cacheManager.del(`msg_${data.userId}`);
   }
 
   async msgServiceSingle(data: any) {
     const { fromUserId, toUserId, msg, msgType, timestamp } = data;
-    console.log(`收到socket消息,${JSON.stringify(data)}`);
+    console.log(`收到socket消息,from:${fromUserId},to:${toUserId}`);
     await this.sendMsg({ fromUserId, toUserId, msg, timestamp });
   }
 
@@ -50,33 +55,48 @@ export class SocketService {
     // await this.sendMsg(fromUserId, toUserId, msg, timestamp);
   }
 
-  async sendToGroup(roomId, msg, joinUserIds: Array<number>) {
-    console.log(roomId, msg, joinUserIds);
-  }
+  async sendToGroup(roomId, msg, joinUserIds: Array<number>) {}
 
-  async sendMsg({ fromUserId, toUserId, msg, timestamp, roomId = toUserId }) {
-    const socketId: string = await this.cacheManager.get(toUserId);
-    //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
-    if (socketId) {
-      await this.sendOnlineMsg(socketId, fromUserId, msg, timestamp, toUserId);
-    } else {
-      await this.sendOfflineMsg(socketId, fromUserId, toUserId, msg, timestamp);
+  async joinUserToRoom(createUserId, roomId, joinUserIds: Array<number>) {
+    const timestamp = new Date().getTime().toString();
+    const msg: MsgType = {
+      type: MsgFileType.Text,
+      content: '',
+      timestamp,
+    };
+    console.log(`向${JSON.stringify(joinUserIds)}发出通知加入了群聊`)
+    for (const joinUserId of joinUserIds) {
+      this.sendMsg({
+        fromUserId: createUserId,
+        toUserId: joinUserId,
+        msg,
+        timestamp,
+      });
     }
   }
 
-  async sendOnlineMsg(
-    socketId,
-    fromUserId,
-    msg: MsgType,
-    timestamp: string,
-    toUserId,
-  ) {
-    console.log(`向${socketId}发出msg消息`);
-    this.server.to(socketId).emit('msg', {
+  async sendMsg({ fromUserId, toUserId, msg, timestamp, roomId = toUserId }) {
+    //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
+    if (this.judgeUserIsOnline(toUserId)) {
+      await this.sendOnlineMsg(fromUserId, msg, timestamp, toUserId);
+    } else {
+      await this.sendOfflineMsg(fromUserId, toUserId, msg, timestamp);
+    }
+  }
+
+  judgeUserIsOnline(userId: number) {
+    return !!this.socketMap.get(userId);
+  }
+
+  async sendOnlineMsg(fromUserId, msg: MsgType, timestamp: string, toUserId) {
+    console.log(`向${toUserId}发出消息`);
+    const client = this.socketMap.get(toUserId);
+    client.emit('msg', {
       fromUserId,
       msg,
       timestamp,
     });
+
     await this.recentChatService.updateRecentChat({
       userId: fromUserId,
       chatType: ChatType.Single,
@@ -89,15 +109,9 @@ export class SocketService {
     });
   }
 
-  async sendOfflineMsg(
-    socketId,
-    fromUserId,
-    toUserId,
-    msg: MsgType,
-    timestamp,
-  ) {
+  async sendOfflineMsg(fromUserId, toUserId, msg: MsgType, timestamp) {
     if (msg.type === MsgFileType.Text) {
-      console.log('对方离线，消息存入redis中');
+      console.log(`对方离线，消息存入redis中，消息类型:${msg.type}`);
       const msgKey = `msg_${toUserId}`;
       await this.cacheManager.update(msgKey, {
         fromUserId,
@@ -125,25 +139,25 @@ export class SocketService {
   }
 
   async sendMsgHistory(fromUserId, toUserId, msg: MsgType) {
-    const socketId: string = await this.cacheManager.get(toUserId);
+    const client = this.socketMap.get(toUserId);
     // 客户端上线后发送历史消息。
     const { type, content, timestamp } = msg;
     if (type === MsgFileType.Text) {
-      this.server.to(toUserId).emit('msg', {
+      client.emit('msg', {
         fromUserId,
         msg,
       });
     } else {
       const blob = await this.fileService.filePath2Blob(content as string);
       msg.content = blob;
-      this.server.to(toUserId).emit('msg', {
+      client.emit('msg', {
         fromUserId,
         msg,
       });
     }
   }
 
-  async sendAllHistoryMsg(client: Socket, history, toUserId) {
+  async sendAllHistoryMsg(toUserId, history) {
     for (const historyItem of history) {
       await this.sendMsgHistory(
         historyItem.fromUserId,
