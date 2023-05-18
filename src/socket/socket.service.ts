@@ -43,16 +43,26 @@ export class SocketService {
   async msgServiceSingle(data: any) {
     const { fromUserId, toUserId, msg, msgType } = data;
     console.log(`收到socket消息,from:${fromUserId},to:${toUserId}`);
-    await this.sendMsg({ fromUserId, toUserId, msg });
+    await this.sendMsgOnlineOrOffline({ fromUserId, toUserId, msg });
   }
 
   async msgServiceMulti(data: any, client: Socket) {
-    const { fromUserId, toUserId, msg, msgType, timestamp } = data;
-    console.log(`收到socket消息,${JSON.stringify(data)}`);
+    const { toChatRoomId, fromUserId, msg, joinUserIds, timestamp } = data;
+    console.log(`收到发送的群聊socket消息, ${JSON.stringify(data)}`);
+    this.sendToGroup(fromUserId, toChatRoomId, msg, joinUserIds);
   }
 
-  async sendToGroup(roomId, msg, joinUserIds: Array<number>) {
-    console.log(111);
+  async sendToGroup(fromUserId, roomId, msg, joinUserIds: Array<number>) {
+    for (const joinUserId of joinUserIds) {
+      this.sendMsgOnlineOrOffline({
+        eventName: 'msg',
+        fromUserId: fromUserId,
+        toUserId: joinUserId,
+        msg,
+        chatId: roomId,
+        joinUserIds,
+      });
+    }
   }
 
   async joinUserToRoom({ createUserId, roomId, joinUserIds, chatRoomName }) {
@@ -67,16 +77,24 @@ export class SocketService {
     };
     console.log(`向${JSON.stringify(joinUserIds)}发出通知加入了群聊`);
     for (const joinUserId of joinUserIds) {
-      this.sendMsg({
+      this.sendMsgOnlineOrOffline({
         eventName: 'joinRoom',
         fromUserId: createUserId,
         toUserId: joinUserId,
         msg,
+        joinUserIds,
       });
     }
   }
 
-  async sendMsg({ eventName = 'msg', toUserId, msg, fromUserId = -1 }) {
+  async sendMsgOnlineOrOffline({
+    eventName = 'msg',
+    toUserId,
+    msg,
+    fromUserId = -1,
+    chatId = fromUserId,
+    joinUserIds = [],
+  }) {
     //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
     if (this.judgeUserIsOnline(toUserId)) {
       await this.sendOnlineMsg({
@@ -84,6 +102,8 @@ export class SocketService {
         fromUserId,
         msg,
         toUserId,
+        chatId,
+        joinUserIds,
       });
     } else {
       await this.sendOfflineMsg({
@@ -91,8 +111,26 @@ export class SocketService {
         fromUserId,
         msg,
         toUserId,
+        chatId,
+        joinUserIds,
       });
     }
+  }
+
+  async sendMsg(
+    client,
+    eventName = 'msg',
+    fromUserId,
+    msg,
+    chatId = fromUserId,
+    joinUserIds = [],
+  ) {
+    client.emit(eventName, {
+      fromUserId,
+      msg,
+      chatId,
+      joinUserIds,
+    });
   }
 
   judgeUserIsOnline(userId: number) {
@@ -101,20 +139,32 @@ export class SocketService {
     return online;
   }
 
-  async sendOnlineMsg({ eventName = 'msg', fromUserId, msg, toUserId }) {
+  async sendOnlineMsg({
+    eventName = 'msg',
+    fromUserId,
+    msg,
+    toUserId,
+    chatId,
+    joinUserIds,
+  }) {
     console.log(`向${toUserId}发出消息`);
     const client = socketMap.get(toUserId);
-    client.emit(eventName, {
-      fromUserId,
-      msg,
-    });
+    this.sendMsg(client, eventName, fromUserId, msg, chatId, joinUserIds);
   }
 
-  async sendOfflineMsg({ eventName, fromUserId, toUserId, msg }) {
+  async sendOfflineMsg({
+    eventName,
+    fromUserId,
+    toUserId,
+    msg,
+    chatId,
+    joinUserIds,
+  }) {
     if (msg.type === MsgFileType.Text) {
       console.log(`对方离线，消息存入redis中，消息类型:${msg.type}`);
       const msgKey = `msg_${toUserId}`;
       await this.cacheManager.update(msgKey, {
+        eventName,
         fromUserId,
         msg,
       });
@@ -139,22 +189,16 @@ export class SocketService {
     }
   }
 
-  async sendMsgHistory(fromUserId, toUserId, msg: MsgType) {
+  async sendMsgHistory(fromUserId, toUserId, msg, eventName = 'msg') {
     const client = socketMap.get(toUserId);
     // 客户端上线后发送历史消息。
     const { type, content, timestamp } = msg;
     if (type === MsgFileType.Text) {
-      client.emit('msg', {
-        fromUserId,
-        msg,
-      });
+      this.sendMsg(client, eventName, fromUserId, msg, fromUserId);
     } else {
       const blob = await this.fileService.filePath2Blob(content as string);
       msg.content = blob;
-      client.emit('msg', {
-        fromUserId,
-        msg,
-      });
+      this.sendMsg(client, eventName, fromUserId, msg, fromUserId);
     }
   }
 
@@ -164,6 +208,7 @@ export class SocketService {
         historyItem.fromUserId,
         toUserId,
         historyItem.msg,
+        historyItem.eventName,
       );
     }
   }
