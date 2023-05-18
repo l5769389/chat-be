@@ -5,7 +5,6 @@ import { BullModule } from '@nestjs/bull';
 import { OfflineMsgProcesssor } from './processsor/msg.processsor';
 import { RedisCacheModule } from 'src/redis-cache/redis-cache.module';
 import { FileService } from 'src/file/file.service';
-import { RecentChatService } from '../recent-chat/recent-chat.service';
 
 @Module({
   imports: [
@@ -14,13 +13,7 @@ import { RecentChatService } from '../recent-chat/recent-chat.service';
     }),
     RedisCacheModule,
   ],
-  providers: [
-    SocketGateway,
-    SocketService,
-    OfflineMsgProcesssor,
-    FileService,
-    RecentChatService,
-  ],
+  providers: [SocketGateway, SocketService, OfflineMsgProcesssor, FileService],
   exports: [SocketService],
 })
 export class SocketModule {}

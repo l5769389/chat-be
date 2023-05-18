@@ -2,19 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 import { Success } from '../common/Success';
-import { RecentChatService } from '../recent-chat/recent-chat.service';
 import { Repository } from 'typeorm';
 import { ChatroomEntity } from '../entities/chatroom.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SocketService } from '../socket/socket.service';
 import { ChatType, MsgFileType, MsgType } from '../types/types';
+import { UserChatroomEntity } from '../entities/user_chatroom.entity';
+import { CreateUserChatRoomDto } from './dto/create-user-chat-room.dto';
 
 @Injectable()
 export class ChatRoomService {
   constructor(
-    private recentChatService: RecentChatService,
     @InjectRepository(ChatroomEntity)
     private chatroomRepository: Repository<ChatroomEntity>,
+    @InjectRepository(UserChatroomEntity)
+    private userChatroomRepository: Repository<UserChatroomEntity>,
     private socketService: SocketService,
   ) {}
 
@@ -29,18 +31,23 @@ export class ChatRoomService {
     createChatRoomDto.roomId = roomId;
     await this.chatroomRepository.save(createChatRoomDto);
     const ids = joinIds.split(',').map((item) => Number.parseInt(item));
+    //将每一个id记录到db中
+    for (const id of ids) {
+      const dto = new CreateUserChatRoomDto(id, roomId);
+      await this.userChatroomRepository.save(dto);
+    }
     // 告知每一个客户端被拉进了一个群
-    this.socketService.joinUserToRoom(createUserId, roomId, ids);
-    this.recentChatService.updateRecentChat({
-      userId: createUserId,
-      chatType: ChatType.Multi,
-      chatId: roomId,
-      chatName: chatRoomName,
-      joinIds: ids,
+    await this.socketService.joinUserToRoom({
+      createUserId,
+      roomId,
+      joinUserIds: ids,
+      chatRoomName,
     });
+
     return new Success({
       roomId: roomId,
       joinIds: joinIds,
+      chatRoomName,
     });
   }
 

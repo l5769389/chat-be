@@ -15,16 +15,16 @@ import { BullModule } from '@nestjs/bull';
 import { RedisCacheModule } from './redis-cache/redis-cache.module';
 import { FileModule } from './file/file.module';
 import { ChatRoomModule } from './chat-room/chat-room.module';
-import { RecentChatModule } from './recent-chat/recent-chat.module';
 import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
 import { ChatroomEntity } from './entities/chatroom.entity';
+import { UserChatroomEntity } from './entities/user_chatroom.entity';
 
 const { mysql, redis } = configuration();
 
 const mysqlConfig = Object.assign({}, mysql, {
   type: 'mysql',
-  entities: [UserEntity, RelationEntity, ChatroomEntity],
+  entities: [UserEntity, RelationEntity, ChatroomEntity, UserChatroomEntity],
   synchronize: true,
   logging: false,
 });
@@ -53,7 +53,6 @@ const Config = ConfigModule.forRoot({
     RedisCacheModule,
     FileModule,
     ChatRoomModule,
-    RecentChatModule,
     Config,
   ],
   controllers: [AppController],
