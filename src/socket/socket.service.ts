@@ -5,7 +5,6 @@ import { Queue } from 'bull';
 import { Server, Socket } from 'socket.io';
 import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
 import { ChatType, MsgFileType, MsgType } from '../types/types';
-import { timestamp } from 'rxjs';
 
 const socketMap = new Map<number, Socket>(); //登录进来的socket实例。
 
@@ -41,21 +40,27 @@ export class SocketService {
   }
 
   async msgServiceSingle(data: any) {
-    const { fromUserId, toUserId, msg, msgType } = data;
+    const { fromUserId, toUserId, msg } = data;
     console.log(`收到socket消息,from:${fromUserId},to:${toUserId}`);
-    await this.sendMsgOnlineOrOffline({ fromUserId, toUserId, msg });
+    await this.sendMsgOnlineOrOffline({
+      eventName: 'singleMsg',
+      fromUserId,
+      toUserId,
+      msg,
+    });
   }
 
   async msgServiceMulti(data: any, client: Socket) {
-    const { toChatRoomId, fromUserId, msg, joinUserIds, timestamp } = data;
+    const { toChatRoomId, fromUserId, msg, joinUserIds } = data;
     console.log(`收到发送的群聊socket消息, ${JSON.stringify(data)}`);
     this.sendToGroup(fromUserId, toChatRoomId, msg, joinUserIds);
   }
 
   async sendToGroup(fromUserId, roomId, msg, joinUserIds: Array<number>) {
-    for (const joinUserId of joinUserIds) {
+    const excludeIds = joinUserIds.filter((item) => item !== fromUserId);
+    for (const joinUserId of excludeIds) {
       this.sendMsgOnlineOrOffline({
-        eventName: 'msg',
+        eventName: 'multiMsg',
         fromUserId: fromUserId,
         toUserId: joinUserId,
         msg,
@@ -71,9 +76,6 @@ export class SocketService {
       type: MsgFileType.Text,
       content: '',
       timestamp,
-      chatRoomName,
-      roomId,
-      joinUserIds,
     };
     console.log(`向${JSON.stringify(joinUserIds)}发出通知加入了群聊`);
     for (const joinUserId of joinUserIds) {
@@ -81,38 +83,43 @@ export class SocketService {
         eventName: 'joinRoom',
         fromUserId: createUserId,
         toUserId: joinUserId,
-        msg,
+        chatRoomName,
+        chatId: roomId,
         joinUserIds,
+        msg,
       });
     }
   }
 
   async sendMsgOnlineOrOffline({
     eventName = 'msg',
-    toUserId,
-    msg,
-    fromUserId = -1,
-    chatId = fromUserId,
-    joinUserIds = [],
+    fromUserId = -1, // 系统消息
+    toUserId, //要发送给的客户端
+    msg, // 消息内容
+    chatId = fromUserId, // 该项是群的id
+    joinUserIds = [], // 群的参加者id
+    chatRoomName = '', // 群名称
   }) {
     //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
     if (this.judgeUserIsOnline(toUserId)) {
       await this.sendOnlineMsg({
         eventName,
         fromUserId,
-        msg,
         toUserId,
+        msg,
         chatId,
         joinUserIds,
+        chatRoomName,
       });
     } else {
       await this.sendOfflineMsg({
         eventName,
         fromUserId,
-        msg,
         toUserId,
+        msg,
         chatId,
         joinUserIds,
+        chatRoomName,
       });
     }
   }
@@ -124,12 +131,14 @@ export class SocketService {
     msg,
     chatId = fromUserId,
     joinUserIds = [],
+    chatRoomName,
   ) {
     client.emit(eventName, {
       fromUserId,
       msg,
       chatId,
       joinUserIds,
+      chatRoomName,
     });
   }
 
@@ -146,10 +155,19 @@ export class SocketService {
     toUserId,
     chatId,
     joinUserIds,
+    chatRoomName,
   }) {
     console.log(`向${toUserId}发出消息`);
     const client = socketMap.get(toUserId);
-    this.sendMsg(client, eventName, fromUserId, msg, chatId, joinUserIds);
+    this.sendMsg(
+      client,
+      eventName,
+      fromUserId,
+      msg,
+      chatId,
+      joinUserIds,
+      chatRoomName,
+    );
   }
 
   async sendOfflineMsg({
@@ -159,14 +177,18 @@ export class SocketService {
     msg,
     chatId,
     joinUserIds,
+    chatRoomName,
   }) {
     if (msg.type === MsgFileType.Text) {
-      console.log(`对方离线，消息存入redis中，消息类型:${msg.type}`);
+      console.log(`对方离线，消息存入redis中，消息为:${JSON.stringify(msg)}`);
       const msgKey = `msg_${toUserId}`;
       await this.cacheManager.update(msgKey, {
         eventName,
         fromUserId,
         msg,
+        chatId,
+        joinUserIds,
+        chatRoomName,
       });
     } else if (msg.type === MsgFileType.IMG) {
       const imgName = `from_${fromUserId}_to_${toUserId}_${new Date().getTime()}`;
@@ -182,34 +204,42 @@ export class SocketService {
         });
         const msgKey = `msg_${toUserId}`;
         await this.cacheManager.update(msgKey, {
+          eventName,
           fromUserId,
           msg: new_msg,
+          chatId,
+          joinUserIds,
+          chatRoomName,
         });
       }
     }
   }
 
-  async sendMsgHistory(fromUserId, toUserId, msg, eventName = 'msg') {
+  async sendMsgHistory(
+    toUserId,
+    { eventName = 'msg', fromUserId, msg, chatId, joinUserIds, chatRoomName },
+  ) {
     const client = socketMap.get(toUserId);
     // 客户端上线后发送历史消息。
-    const { type, content, timestamp } = msg;
-    if (type === MsgFileType.Text) {
-      this.sendMsg(client, eventName, fromUserId, msg, fromUserId);
-    } else {
+    const { type, content } = msg;
+    if (type === MsgFileType.IMG) {
       const blob = await this.fileService.filePath2Blob(content as string);
       msg.content = blob;
-      this.sendMsg(client, eventName, fromUserId, msg, fromUserId);
     }
+    this.sendMsg(
+      client,
+      eventName,
+      fromUserId,
+      msg,
+      chatId,
+      joinUserIds,
+      chatRoomName,
+    );
   }
 
   async sendAllHistoryMsg(toUserId, history) {
     for (const historyItem of history) {
-      await this.sendMsgHistory(
-        historyItem.fromUserId,
-        toUserId,
-        historyItem.msg,
-        historyItem.eventName,
-      );
+      await this.sendMsgHistory(toUserId, historyItem);
     }
   }
 

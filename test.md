@@ -11,7 +11,7 @@ singlemsg: {
     msg:{
       type, 
       content
-  },
+  }
 }
 
 multimsg: {
@@ -20,8 +20,6 @@ multimsg: {
     msg:{
     type,     // text img
     content   // 消息内容 
-  },
+  }
 }
-
-
 ```
