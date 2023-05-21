@@ -3,20 +3,20 @@ import { AppModule } from './app.module';
 import configuration from './config/configuration';
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
-console.log(__dirname);
+
 const {
-  http: { port },
+  http: { host, port },
 } = configuration();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     httpsOptions: {
-      key: readFileSync(join(__dirname, '/config/rootCA.pem')),
-      cert: readFileSync(join(__dirname, '/config/rootCA-key.pem')),
+      key: readFileSync(join(__dirname, '/config/local-key.pem')),
+      cert: readFileSync(join(__dirname, '/config/local.pem')),
     },
   });
   app.enableCors();
-  await app.listen(port);
+  await app.listen(port, host);
 }
 
 bootstrap();

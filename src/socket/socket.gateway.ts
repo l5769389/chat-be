@@ -56,6 +56,25 @@ export class SocketGateway
     await this.socketService.afterConnected(data, client);
   }
 
+  @SubscribeMessage('join_video_room')
+  async handleMsg2(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    client.emit('joined_video_room');
+    client.join('demo');
+    client.broadcast.to('demo').emit('other_join_room', client.id);
+  }
+
+  @SubscribeMessage('video_room_message')
+  async handleMsg3(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    console.log(`video_room_message,内容是：${JSON.stringify(data)}`)
+    client.broadcast.to('demo').emit('video_room_message', data);
+  }
+
   afterInit(server: any): any {
     this.socketService.initInstance(server);
   }
