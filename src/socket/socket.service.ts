@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import { Server, Socket } from 'socket.io';
 import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
-import { ChatType, MsgFileType, MsgType } from '../types/types';
+import { ChatType, MsgFileType, MsgType, SocketEvent } from '../types/types';
 
 const socketMap = new Map<number, Socket>(); //登录进来的socket实例。
 
@@ -247,6 +247,49 @@ export class SocketService {
     const history = JSON.parse(await this.cacheManager.get(`msg_${userId}`));
     console.log(`该用户的历史消息为：${JSON.stringify(history)}`);
     return history;
+  }
+
+  /**
+   *  A-向服务器发出的邀请 B的消息。
+   * @param data
+   */
+  async offerInvite(client: Socket, data: any) {
+    const { userId, oppositeId } = data;
+    const time = new Date().getTime();
+    const roomId = `f_${userId}_t_${oppositeId}_time_${time}`;
+    client.emit('create_invite_room', roomId);
+    // client.join(roomId);
+    this.sendMsgOnlineOrOffline({
+      eventName: SocketEvent.OFFER_INVITE,
+      fromUserId: userId,
+      toUserId: oppositeId,
+      msg: {
+        type: MsgFileType.Text,
+        content: '',
+        roomId: roomId,
+      },
+    });
+  }
+
+  /**
+   * B-向服务器发出的接受A邀请的消息。
+   * @param data
+   */
+  async answerInvite(client, data: any) {
+    const { userId, oppositeUserId, roomId, answer } = data;
+    if (answer) {
+      client.join(roomId);
+    }
+    this.sendMsgOnlineOrOffline({
+      eventName: SocketEvent.ANSWER_INVITE,
+      fromUserId: userId,
+      toUserId: oppositeUserId,
+      msg: {
+        type: MsgFileType.Text,
+        content: '',
+        answer: answer,
+      },
+    });
   }
 
   initInstance(server: Server) {

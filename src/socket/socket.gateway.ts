@@ -13,6 +13,7 @@ import { Server, Socket } from 'socket.io';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
+import { SocketEvent } from '../types/types';
 
 @WebSocketGateway({ cors: true })
 export class SocketGateway
@@ -56,23 +57,31 @@ export class SocketGateway
     await this.socketService.afterConnected(data, client);
   }
 
-  @SubscribeMessage('join_video_room')
+  @SubscribeMessage(SocketEvent.OFFER_INVITE)
   async handleMsg2(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
-    client.emit('joined_video_room');
-    client.join('demo');
-    client.broadcast.to('demo').emit('other_join_room', client.id);
+    console.log(`收到事件:${SocketEvent.OFFER_INVITE}`);
+    await this.socketService.offerInvite(client, data);
   }
 
-  @SubscribeMessage('video_room_message')
+  @SubscribeMessage(SocketEvent.ANSWER_INVITE)
+  async handleMsg4(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    console.log(`收到事件:${SocketEvent.ANSWER_INVITE}`);
+    await this.socketService.answerInvite(client, data);
+  }
+
+  @SubscribeMessage(SocketEvent.VIDEO_ROOM_MSG)
   async handleMsg3(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
-    console.log(`video_room_message,内容是：${JSON.stringify(data)}`)
-    client.broadcast.to('demo').emit('video_room_message', data);
+    const { roomId, content } = data;
+    client.broadcast.to(roomId).emit(SocketEvent.VIDEO_ROOM_MSG, content);
   }
 
   afterInit(server: any): any {
