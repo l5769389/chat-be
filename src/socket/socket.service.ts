@@ -258,7 +258,8 @@ export class SocketService {
     const time = new Date().getTime();
     const roomId = `f_${userId}_t_${oppositeId}_time_${time}`;
     client.emit('create_invite_room', roomId);
-    // client.join(roomId);
+    console.log(`发出invite,加入房间roomId:${roomId}`);
+    client.join(roomId);
     this.sendMsgOnlineOrOffline({
       eventName: SocketEvent.OFFER_INVITE,
       fromUserId: userId,
@@ -278,6 +279,7 @@ export class SocketService {
   async answerInvite(client, data: any) {
     const { userId, oppositeUserId, roomId, answer } = data;
     if (answer) {
+      console.log(`接受请求，加入房间,roomId:${roomId}`);
       client.join(roomId);
     }
     this.sendMsgOnlineOrOffline({

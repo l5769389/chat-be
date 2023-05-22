@@ -81,7 +81,8 @@ export class SocketGateway
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const { roomId, content } = data;
-    client.broadcast.to(roomId).emit(SocketEvent.VIDEO_ROOM_MSG, content);
+    console.log(`收到广播请求,内容是：${JSON.stringify(data)}`);
+    client.to(roomId).emit(SocketEvent.VIDEO_ROOM_MSG, content);
   }
 
   afterInit(server: any): any {
