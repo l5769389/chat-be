@@ -91,7 +91,9 @@ export class SocketGateway
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const { roomId, type, content } = data;
-    client.to(roomId).emit(SocketEvent.VIDEO_ROOM_CHANGE_MSG, type);
+    client.to(roomId).emit(SocketEvent.VIDEO_ROOM_CHANGE_MSG, {
+      type
+    });
   }
 
   afterInit(server: any): any {
