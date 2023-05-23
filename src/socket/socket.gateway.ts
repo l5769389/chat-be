@@ -13,7 +13,7 @@ import { Server, Socket } from 'socket.io';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
-import { SocketEvent } from '../types/types';
+import { SocketEvent, VIDEO_ROOM_CHANGE_MSG_SUB } from '../types/types';
 
 @WebSocketGateway({ cors: true })
 export class SocketGateway
@@ -33,7 +33,7 @@ export class SocketGateway
     });
   }
 
-  @SubscribeMessage('SingleMsg')
+  @SubscribeMessage(SocketEvent.CHAT_MSG_SINGLE)
   async handleSingleMsg(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -41,7 +41,7 @@ export class SocketGateway
     await this.socketService.msgServiceSingle(data);
   }
 
-  @SubscribeMessage('MultiMsg')
+  @SubscribeMessage(SocketEvent.CHAT_MSG_MULTI)
   async handleMultiMsg(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -49,7 +49,7 @@ export class SocketGateway
     await this.socketService.msgServiceMulti(data, client);
   }
 
-  @SubscribeMessage('connected')
+  @SubscribeMessage(SocketEvent.CONNECTED)
   async handleMsg1(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -80,9 +80,18 @@ export class SocketGateway
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
+    console.log(`收到${SocketEvent.VIDEO_ROOM_MSG}`);
     const { roomId, content } = data;
-    console.log(`收到广播请求,内容是：${JSON.stringify(data)}`);
     client.to(roomId).emit(SocketEvent.VIDEO_ROOM_MSG, content);
+  }
+
+  @SubscribeMessage(SocketEvent.VIDEO_ROOM_CHANGE_MSG)
+  async handleMsg5(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    const { roomId, type, content } = data;
+    client.to(roomId).emit(SocketEvent.VIDEO_ROOM_CHANGE_MSG, type);
   }
 
   afterInit(server: any): any {

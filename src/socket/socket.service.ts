@@ -43,7 +43,7 @@ export class SocketService {
     const { fromUserId, toUserId, msg } = data;
     console.log(`收到socket消息,from:${fromUserId},to:${toUserId}`);
     await this.sendMsgOnlineOrOffline({
-      eventName: 'singleMsg',
+      eventName: SocketEvent.CHAT_MSG_SINGLE,
       fromUserId,
       toUserId,
       msg,
@@ -60,7 +60,7 @@ export class SocketService {
     const excludeIds = joinUserIds.filter((item) => item !== fromUserId);
     for (const joinUserId of excludeIds) {
       this.sendMsgOnlineOrOffline({
-        eventName: 'multiMsg',
+        eventName: SocketEvent.CHAT_MSG_MULTI,
         fromUserId: fromUserId,
         toUserId: joinUserId,
         msg,
@@ -80,7 +80,7 @@ export class SocketService {
     console.log(`向${JSON.stringify(joinUserIds)}发出通知加入了群聊`);
     for (const joinUserId of joinUserIds) {
       this.sendMsgOnlineOrOffline({
-        eventName: 'joinRoom',
+        eventName: SocketEvent.CHAT_JOIN_ROOM,
         fromUserId: createUserId,
         toUserId: joinUserId,
         chatRoomName,
@@ -257,7 +257,7 @@ export class SocketService {
     const { userId, oppositeId } = data;
     const time = new Date().getTime();
     const roomId = `f_${userId}_t_${oppositeId}_time_${time}`;
-    client.emit('create_invite_room', roomId);
+    client.emit(SocketEvent.CREATE_INVITE_ROOM, roomId);
     console.log(`发出invite,加入房间roomId:${roomId}`);
     client.join(roomId);
     this.sendMsgOnlineOrOffline({
