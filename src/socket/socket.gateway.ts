@@ -92,7 +92,7 @@ export class SocketGateway
   ): Promise<void> {
     const { roomId, type, content } = data;
     client.to(roomId).emit(SocketEvent.VIDEO_ROOM_CHANGE_MSG, {
-      type
+      type,
     });
   }
 
