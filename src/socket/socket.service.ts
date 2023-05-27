@@ -192,9 +192,10 @@ export class SocketService {
       });
     } else if (msg.type === MsgFileType.IMG) {
       const imgName = `from_${fromUserId}_to_${toUserId}_${new Date().getTime()}`;
-      const filePath = await this.fileService.saveImgToServe(
+      const filePath = await this.fileService.saveFileToServe(
         msg.content as Buffer,
         imgName,
+        'png'
       );
       if (filePath === '') {
         // 文件保存错误

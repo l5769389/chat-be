@@ -5,9 +5,9 @@ import * as fs from 'fs';
 
 @Injectable()
 export class FileService {
-  filePath2Blob(imgPath: string): Promise<Buffer> {
+  filePath2Blob(filePath: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      readFile(imgPath, (err, data) => {
+      readFile(filePath, (err, data) => {
         if (err) {
           reject(err);
         } else {
@@ -17,21 +17,23 @@ export class FileService {
     });
   }
 
-  saveImgToServe(buffer: Buffer, imgName: string) {
+  saveFileToServe(buffer: Buffer, fileName: string, suffix = '') {
     return new Promise(async (resolve, reject) => {
       const parentPath = path.join(__dirname, 'static');
-      const imgPath = path.join(__dirname, 'static', `${imgName}.png`);
+      const filePath = path.join(__dirname, 'static', `${fileName}.${suffix}`);
       await this.checkPathExist(parentPath);
-      writeFile(imgPath, buffer, null, (err) => {
+      writeFile(filePath, buffer, null, (err) => {
         if (err) {
           console.log(`写文件错误`, err);
           reject('');
         } else {
-          resolve(imgPath);
+          resolve(filePath);
         }
       });
     });
   }
+
+
 
   async checkPathExist(parentPath) {
     try {
