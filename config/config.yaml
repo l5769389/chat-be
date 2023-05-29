@@ -4,8 +4,8 @@ http:
     port: 3000
 
 server:
-    host: &host '192.168.71.17'
-#    host: &host 'localhost'
+#    host: &host '192.168.71.17'
+    host: &host 'localhost'
 
 mysql:
     host: *host

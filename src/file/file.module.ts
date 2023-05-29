@@ -3,6 +3,7 @@ import { FileService } from './file.service';
 import { FileController } from './file.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import configuration from '../config/configuration';
+import { diskStorage } from 'multer';
 
 const {
   file: { fileSizeLimit },

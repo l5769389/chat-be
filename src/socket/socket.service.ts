@@ -195,7 +195,7 @@ export class SocketService {
       const filePath = await this.fileService.saveFileToServe(
         msg.content as Buffer,
         imgName,
-        'png'
+        'png',
       );
       if (filePath === '') {
         // 文件保存错误
