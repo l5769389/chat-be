@@ -13,9 +13,12 @@ import { Server, Socket } from 'socket.io';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
-import { SocketEvent, VIDEO_ROOM_CHANGE_MSG_SUB } from '../types/types';
+import { SocketEvent } from '../types/types';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway(3001, {
+  cors: true,
+  transports: ['polling', 'websocket'],
+})
 export class SocketGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -30,7 +33,16 @@ export class SocketGateway
   handleConnection(client: Socket) {
     this.server.on('connection', async (socket: Socket) => {
       //
+      console.log('connect');
     });
+  }
+
+  @SubscribeMessage('connection')
+  async handleConnection1(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ) {
+    console.log('connect');
   }
 
   @SubscribeMessage(SocketEvent.CHAT_MSG_SINGLE)
@@ -54,6 +66,7 @@ export class SocketGateway
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
+    console.log('connected');
     await this.socketService.afterConnected(data, client);
   }
 

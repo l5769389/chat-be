@@ -22,8 +22,10 @@ export class SocketService {
     const userId: string = await this.cacheManager.get(client.id);
     console.log(`断开链接,socketId: ${client.id},userId: ${userId}`);
     await this.cacheManager.del(client.id);
-    await this.cacheManager.del(userId);
-    socketMap.delete(Number.parseInt(userId));
+    if (userId) {
+      await this.cacheManager.del(userId);
+      socketMap.delete(Number.parseInt(userId));
+    }
   }
 
   async afterConnected(data: any, client: Socket) {

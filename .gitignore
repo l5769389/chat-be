@@ -37,3 +37,4 @@ lerna-debug.log*
 
 /src/static/*
 *.pem
+/config
