@@ -159,8 +159,9 @@ export class SocketService {
     joinUserIds,
     chatRoomName,
   }) {
-    console.log(`向${toUserId}发出消息`);
     const client = socketMap.get(toUserId);
+    console.log(`向${toUserId}发出消息:`);
+    console.log(eventName, fromUserId, msg, chatId, joinUserIds, chatRoomName);
     this.sendMsg(
       client,
       eventName,
@@ -282,7 +283,9 @@ export class SocketService {
   async answerInvite(client, data: any) {
     const { userId, oppositeUserId, roomId, answer } = data;
     if (answer) {
-      console.log(`接受请求，加入房间,roomId:${roomId}`);
+      console.log(
+        `接受请求，加入房间,roomId:${roomId},${userId},${oppositeUserId},${answer}`,
+      );
       client.join(roomId);
     }
     this.sendMsgOnlineOrOffline({

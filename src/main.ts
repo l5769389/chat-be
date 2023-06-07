@@ -1,8 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import configuration from './config/configuration';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 const {
   http: { host, port },

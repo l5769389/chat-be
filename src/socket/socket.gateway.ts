@@ -85,6 +85,7 @@ export class SocketGateway
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     console.log(`收到事件:${SocketEvent.ANSWER_INVITE}`);
+    console.log(`${JSON.stringify(data)}`);
     await this.socketService.answerInvite(client, data);
   }
 
@@ -104,6 +105,9 @@ export class SocketGateway
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const { roomId, type, content } = data;
+    console.log(
+      `${SocketEvent.VIDEO_ROOM_CHANGE_MSG}, ${roomId}, ${type}, ${content}`,
+    );
     client.to(roomId).emit(SocketEvent.VIDEO_ROOM_CHANGE_MSG, {
       type,
     });
