@@ -100,7 +100,8 @@ export class SocketService {
     msg, // 消息内容
     chatId = fromUserId, // 该项是群的id
     joinUserIds = [], // 群的参加者id
-    chatRoomName = '', // 群名称
+    chatRoomName = '', // 群名称,
+    args = null,
   }) {
     //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
     if (this.judgeUserIsOnline(toUserId)) {
@@ -112,6 +113,7 @@ export class SocketService {
         chatId,
         joinUserIds,
         chatRoomName,
+        args,
       });
     } else {
       await this.sendOfflineMsg({
@@ -122,6 +124,7 @@ export class SocketService {
         chatId,
         joinUserIds,
         chatRoomName,
+        args,
       });
     }
   }
@@ -134,6 +137,7 @@ export class SocketService {
     chatId = fromUserId,
     joinUserIds = [],
     chatRoomName,
+    args = null,
   ) {
     client.emit(eventName, {
       fromUserId,
@@ -141,6 +145,7 @@ export class SocketService {
       chatId,
       joinUserIds,
       chatRoomName,
+      ...args,
     });
   }
 
@@ -158,6 +163,7 @@ export class SocketService {
     chatId,
     joinUserIds,
     chatRoomName,
+    args = null,
   }) {
     const client = socketMap.get(toUserId);
     console.log(`向${toUserId}发出消息:`);
@@ -170,6 +176,7 @@ export class SocketService {
       chatId,
       joinUserIds,
       chatRoomName,
+      args,
     );
   }
 
@@ -181,6 +188,7 @@ export class SocketService {
     chatId,
     joinUserIds,
     chatRoomName,
+    args = null,
   }) {
     if (msg.type === MsgFileType.Text) {
       console.log(`对方离线，消息存入redis中，消息为:${JSON.stringify(msg)}`);
@@ -192,6 +200,7 @@ export class SocketService {
         chatId,
         joinUserIds,
         chatRoomName,
+        ...args,
       });
     } else if (msg.type === MsgFileType.IMG) {
       const imgName = `from_${fromUserId}_to_${toUserId}_${new Date().getTime()}`;
@@ -258,7 +267,7 @@ export class SocketService {
    * @param data
    */
   async offerInvite(client: Socket, data: any) {
-    const { userId, oppositeId } = data;
+    const { userId, oppositeId, ...args } = data;
     const time = new Date().getTime();
     const roomId = `f_${userId}_t_${oppositeId}_time_${time}`;
     client.emit(SocketEvent.CREATE_INVITE_ROOM, roomId);
@@ -273,6 +282,7 @@ export class SocketService {
         content: '',
         roomId: roomId,
       },
+      args,
     });
   }
 
@@ -281,7 +291,7 @@ export class SocketService {
    * @param data
    */
   async answerInvite(client, data: any) {
-    const { userId, oppositeUserId, roomId, answer } = data;
+    const { userId, oppositeUserId, roomId, answer, ...args } = data;
     if (answer) {
       console.log(
         `接受请求，加入房间,roomId:${roomId},${userId},${oppositeUserId},${answer}`,
@@ -297,6 +307,7 @@ export class SocketService {
         content: '',
         answer: answer,
       },
+      args,
     });
   }
 

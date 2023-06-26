@@ -113,6 +113,15 @@ export class SocketGateway
     });
   }
 
+  @SubscribeMessage(SocketEvent.REMOTE_CONTROL)
+  async handleMsg6(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    const { roomId, content } = data;
+    client.to(roomId).emit(SocketEvent.REMOTE_CONTROL, content);
+  }
+
   afterInit(server: any): any {
     this.socketService.initInstance(server);
   }
