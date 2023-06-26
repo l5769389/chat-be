@@ -14,7 +14,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { CACHE_MANAGER, CacheKey } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { Public } from 'src/decorator/public/public.decorator';
+import { CreateUserDto } from './dto/create-user.dto';
+import { Public } from '../decorator/public/public.decorator';
 
 @Controller('/api')
 export class UserController {
@@ -39,10 +40,24 @@ export class UserController {
     return this.userService.getUserInfo(req.user.userId);
   }
 
-  @Public()
   @Get('/users')
   async getUsersInfo(@Query('ids') ids: string) {
     const id_arr = ids.split(',').map((item) => Number.parseInt(item));
     return this.userService.getUsersInfo(id_arr);
+  }
+
+  @Post('/user')
+  async create(@Body() createUserDto: CreateUserDto) {
+    if (!createUserDto.avatar) {
+      createUserDto.avatar = '/static/default_avatar.png';
+    }
+    return this.userService.create(createUserDto);
+  }
+
+  @Public()
+  @Post('/checkUsername')
+  async check(@Body() username: string) {
+    // todo
+    console.log(username);
   }
 }

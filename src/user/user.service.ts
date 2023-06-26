@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { RelationEntity } from '../entities/relation.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Success } from '../common/Success';
 
 @Injectable()
 export class UserService {
@@ -15,8 +16,13 @@ export class UserService {
     private relationRepository: Repository<RelationEntity>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new userEntity';
+  async create(createUserDto: CreateUserDto) {
+    const user = await this.findOne(createUserDto.username);
+    if (user) {
+      throw new BadRequestException('用户名已经存在');
+    }
+    await this.userRepository.save(createUserDto);
+    return new Success();
   }
 
   findAll() {

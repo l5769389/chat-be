@@ -19,7 +19,8 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
 import { ChatroomEntity } from './entities/chatroom.entity';
 import { UserChatroomEntity } from './entities/user_chatroom.entity';
-
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 const { mysql, redis } = configuration();
 
 const mysqlConfig = Object.assign({}, mysql, {
@@ -54,6 +55,10 @@ const Config = ConfigModule.forRoot({
     FileModule,
     ChatRoomModule,
     Config,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      serveRoot: '/static',
+    }),
   ],
   controllers: [AppController],
   providers: [
