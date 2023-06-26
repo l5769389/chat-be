@@ -6,6 +6,7 @@ import { UserEntity } from '../entities/user.entity';
 import { RelationEntity } from '../entities/relation.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Success } from '../common/Success';
+import { Failure } from '../common/Failure';
 
 @Injectable()
 export class UserService {
@@ -17,11 +18,16 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    const user = await this.findOne(createUserDto.username);
-    if (user) {
-      throw new BadRequestException('用户名已经存在');
-    }
+    await this.checkUsername(createUserDto.username);
     await this.userRepository.save(createUserDto);
+    return new Success();
+  }
+
+  async checkUsername(username: string) {
+    const user = await this.findOne(username);
+    if (user) {
+      return new Failure('exist');
+    }
     return new Success();
   }
 
@@ -90,5 +96,11 @@ export class UserService {
       usersInfo[userId] = info;
     }
     return usersInfo;
+  }
+
+  async search(keyword: string) {
+    await this.userRepository.find({
+      //todo search
+    });
   }
 }

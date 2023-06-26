@@ -46,18 +46,26 @@ export class UserController {
     return this.userService.getUsersInfo(id_arr);
   }
 
+  @Public()
   @Post('/user')
   async create(@Body() createUserDto: CreateUserDto) {
     if (!createUserDto.avatar) {
       createUserDto.avatar = '/static/default_avatar.png';
     }
+    if (!createUserDto.nickname) {
+      createUserDto.nickname = '爱吃炸鸡的路人甲';
+    }
     return this.userService.create(createUserDto);
   }
 
   @Public()
-  @Post('/checkUsername')
-  async check(@Body() username: string) {
-    // todo
-    console.log(username);
+  @Get('/checkUsername')
+  async check(@Query('username') username: string) {
+    return await this.userService.checkUsername(username);
+  }
+
+  @Get('/search')
+  async searchByKeyword(@Query('keyword') keyword: string){
+    return  await this.userService.search(keyword)
   }
 }
