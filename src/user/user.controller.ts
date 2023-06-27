@@ -65,7 +65,8 @@ export class UserController {
   }
 
   @Get('/search')
-  async searchByKeyword(@Query('keyword') keyword: string){
-    return  await this.userService.search(keyword)
+  async searchByKeyword(@Request() req, @Query('keyword') keyword: string) {
+    const userId = req.user.userId;
+    return await this.userService.search(userId, keyword);
   }
 }

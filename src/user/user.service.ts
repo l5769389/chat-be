@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { RelationEntity } from '../entities/relation.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -98,9 +98,29 @@ export class UserService {
     return usersInfo;
   }
 
-  async search(keyword: string) {
-    await this.userRepository.find({
-      //todo search
+  async search(userId, keyword: string) {
+    const ans = await this.userRepository
+      .createQueryBuilder('user')
+      .where(
+        'user.username Like :keyword OR user.nickname Like :keyword OR user.userId = :accuracy_keyword',
+        {
+          keyword: `%${keyword}%`,
+          accuracy_keyword: `${keyword}`,
+        },
+      )
+      .limit(10)
+      .getMany();
+    const friends = await this.findFriends(userId);
+    const friends_ids = friends.map((item) => item.userId);
+    const filteredFromFriends = ans.filter((item) => {
+      if (!friends_ids.includes(item.userId)) {
+        return item;
+      }
     });
+    const res = filteredFromFriends.map((item) => {
+      item.password = '';
+      return item;
+    });
+    return new Success(res);
   }
 }

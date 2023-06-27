@@ -18,6 +18,8 @@ enum SocketEvent {
   VIDEO_ROOM_CHANGE_MSG = 'video_room_change_msg', //关闭，切换语音、视频等
 
   REMOTE_CONTROL = 'remote_control',
+
+  ADD_FRIEND_INVITE = 'add_friend_invite',
 }
 
 enum VIDEO_ROOM_CHANGE_MSG_SUB {

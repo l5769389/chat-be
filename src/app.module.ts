@@ -21,13 +21,15 @@ import { ChatroomEntity } from './entities/chatroom.entity';
 import { UserChatroomEntity } from './entities/user_chatroom.entity';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { RelationModule } from './relation/relation.module';
+
 const { mysql, redis } = configuration();
 
 const mysqlConfig = Object.assign({}, mysql, {
   type: 'mysql',
   entities: [UserEntity, RelationEntity, ChatroomEntity, UserChatroomEntity],
   synchronize: true,
-  logging: false,
+  logging: false, // 打开mysql的日志
 });
 const DbModule = TypeOrmModule.forRoot(mysqlConfig);
 
@@ -59,6 +61,7 @@ const Config = ConfigModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
       serveRoot: '/static',
     }),
+    RelationModule,
   ],
   controllers: [AppController],
   providers: [

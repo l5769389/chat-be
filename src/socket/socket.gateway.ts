@@ -50,7 +50,10 @@ export class SocketGateway
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ) {
-    await this.socketService.msgServiceSingle(data);
+    await this.socketService.msgServiceSingle(
+      data,
+      SocketEvent.CHAT_MSG_SINGLE,
+    );
   }
 
   @SubscribeMessage(SocketEvent.CHAT_MSG_MULTI)
