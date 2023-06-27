@@ -9,6 +9,7 @@ import { SocketService } from '../socket/socket.service';
 // import { SocketEvent } from '../types/types';
 import { UserService } from '../user/user.service';
 import { SocketEvent } from '../types/types';
+import { AnswerInviteDto } from './dto/answer-invite.dto';
 
 @Injectable()
 export class RelationService {
@@ -19,16 +20,25 @@ export class RelationService {
     private userService: UserService,
   ) {}
 
-  async create(createRelationDto: CreateRelationDto) {
+  /**
+   * 1. 获取想要添加人的信息
+   * 2. 创建一个key 存入redis中，以便
+   * 3. 告知socketio通知被添加人
+   * @param createRelationDto
+   */
+  async invite(createRelationDto: CreateRelationDto) {
     // await this.relationRepository.save(createRelationDto);
+    // todo
     const { user } = await this.userService.getUserInfo(
       createRelationDto.userId,
     );
+    const timestamp: number = new Date().getTime();
     this.socketService.msgServiceSingle(
       {
         fromUserId: 2,
         toUserId: createRelationDto.friendsId,
         msg: user,
+        invite_time: timestamp,
       },
       SocketEvent.ADD_FRIEND_INVITE,
     );
@@ -49,5 +59,9 @@ export class RelationService {
 
   remove(id: number) {
     return `This action removes a #${id} relation`;
+  }
+
+  async create(answerInviteDto: AnswerInviteDto) {
+    return Promise.resolve(undefined);
   }
 }

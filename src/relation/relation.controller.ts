@@ -11,6 +11,7 @@ import { RelationService } from './relation.service';
 import { CreateRelationDto } from './dto/create-relation.dto';
 import { UpdateRelationDto } from './dto/update-relation.dto';
 import { Public } from '../decorator/public/public.decorator';
+import { AnswerInviteDto } from "./dto/answer-invite.dto";
 
 @Controller('relation')
 export class RelationController {
@@ -18,8 +19,14 @@ export class RelationController {
 
   @Public()
   @Post()
-  async create(@Body() createRelationDto: CreateRelationDto) {
-    return await this.relationService.create(createRelationDto);
+  async invite(@Body() createRelationDto: CreateRelationDto) {
+    return await this.relationService.invite(createRelationDto);
+  }
+
+  @Public()
+  @Post('/submit/inviteAnswer')
+  async receiveInviteAnswer(@Body() answerInviteDto: AnswerInviteDto){
+      return await this.relationService.create(answerInviteDto);
   }
 
   @Get()
