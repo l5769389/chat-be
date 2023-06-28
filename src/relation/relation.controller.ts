@@ -6,12 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  Request,
 } from '@nestjs/common';
 import { RelationService } from './relation.service';
 import { CreateRelationDto } from './dto/create-relation.dto';
 import { UpdateRelationDto } from './dto/update-relation.dto';
 import { Public } from '../decorator/public/public.decorator';
-import { AnswerInviteDto } from "./dto/answer-invite.dto";
+import { AnswerInviteDto } from './dto/answer-invite.dto';
 
 @Controller('relation')
 export class RelationController {
@@ -25,8 +26,8 @@ export class RelationController {
 
   @Public()
   @Post('/submit/inviteAnswer')
-  async receiveInviteAnswer(@Body() answerInviteDto: AnswerInviteDto){
-      return await this.relationService.create(answerInviteDto);
+  async receiveInviteAnswer(@Body() answerInviteDto: AnswerInviteDto) {
+    return await this.relationService.handleAnswer(answerInviteDto);
   }
 
   @Get()
@@ -48,7 +49,8 @@ export class RelationController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.relationService.remove(+id);
+  remove(@Param('id') id: number, @Request() req) {
+    const userId = req.user.userId;
+    return this.relationService.remove(userId, id);
   }
 }

@@ -79,11 +79,18 @@ export class UserService {
   }
 
   async getUserInfo(userId: number) {
-    const friends = await this.findFriends(userId);
     const user = await this.findUser(userId);
+    const friends = await this.findFriends(userId);
     user.password = '';
     return {
+      friends: friends,
       user: user,
+    };
+  }
+
+  async getFriends(userId: number) {
+    const friends = await this.findFriends(userId);
+    return {
       friends: friends,
     };
   }

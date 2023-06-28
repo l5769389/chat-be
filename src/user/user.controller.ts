@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { CACHE_MANAGER, CacheKey } from '@nestjs/cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -38,6 +38,11 @@ export class UserController {
   @Get('/user')
   async getUserInfo(@Request() req) {
     return this.userService.getUserInfo(req.user.userId);
+  }
+
+  @Get('/friends')
+  async getFriends(@Request() req) {
+    return this.userService.getFriends(req.user.userId);
   }
 
   @Get('/users')

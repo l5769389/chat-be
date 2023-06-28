@@ -8,8 +8,9 @@ import { Success } from '../common/Success';
 import { SocketService } from '../socket/socket.service';
 // import { SocketEvent } from '../types/types';
 import { UserService } from '../user/user.service';
-import { SocketEvent } from '../types/types';
+import { CLIENT_OP_SUB, SocketEvent } from '../types/types';
 import { AnswerInviteDto } from './dto/answer-invite.dto';
+import { RedisCacheService } from '../redis-cache/redis-cache.service';
 
 @Injectable()
 export class RelationService {
@@ -18,6 +19,7 @@ export class RelationService {
     private relationRepository: Repository<RelationEntity>,
     private socketService: SocketService,
     private userService: UserService,
+    private cacheManager: RedisCacheService,
   ) {}
 
   /**
@@ -27,20 +29,28 @@ export class RelationService {
    * @param createRelationDto
    */
   async invite(createRelationDto: CreateRelationDto) {
-    // await this.relationRepository.save(createRelationDto);
-    // todo
+    const timestamp: number = new Date().getTime();
+    const invite_key = `addFriend_from_${createRelationDto.userId}_to_${createRelationDto.friendsId}`;
+    const invite_val = JSON.stringify(createRelationDto);
+    this.cacheManager.set(invite_key, invite_val);
     const { user } = await this.userService.getUserInfo(
       createRelationDto.userId,
     );
-    const timestamp: number = new Date().getTime();
     this.socketService.msgServiceSingle(
       {
-        fromUserId: 2,
+        fromUserId: createRelationDto.userId,
         toUserId: createRelationDto.friendsId,
-        msg: user,
-        invite_time: timestamp,
+        msg: {
+          opType: CLIENT_OP_SUB.ADD_FRIEND_INVITE,
+          invite: {
+            userInfo: user,
+            invite_time: timestamp,
+            invite_key: invite_key,
+            invite_msg: createRelationDto.inviteMsg,
+          },
+        },
       },
-      SocketEvent.ADD_FRIEND_INVITE,
+      SocketEvent.CLIENT_OP,
     );
     return new Success();
   }
@@ -57,11 +67,66 @@ export class RelationService {
     return `This action updates a #${id} relation`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} relation`;
+  async remove(userId: number, friendUserId: number) {
+    const relation = await this.relationRepository.findOne({
+      where: {
+        userId: userId,
+        friendsId: friendUserId,
+      },
+    });
+    const relation1 = await this.relationRepository.findOne({
+      where: {
+        userId: friendUserId,
+        friendsId: userId,
+      },
+    });
+    await this.relationRepository.delete(relation);
+    await this.relationRepository.delete(relation1);
+    await this._sendToFreshFriendsList([userId, friendUserId]);
+    return new Success();
   }
 
-  async create(answerInviteDto: AnswerInviteDto) {
-    return Promise.resolve(undefined);
+  async handleAnswer(answerInviteDto: AnswerInviteDto) {
+    const inviteInfo: CreateRelationDto = JSON.parse(
+      await this.cacheManager.getAndDelete(answerInviteDto.invite_key),
+    );
+    await this.create(inviteInfo);
+    await this._sendToFreshFriendsList([
+      inviteInfo.userId,
+      inviteInfo.friendsId,
+    ]);
+    return new Success();
+  }
+
+  async _sendToFreshFriendsList(userIds: number[]) {
+    for (const id of userIds) {
+      await this.socketService.msgServiceSingle(
+        {
+          fromUserId: -1,
+          toUserId: id,
+          msg: {
+            opType: CLIENT_OP_SUB.FRESH_FRIENDS_LIST,
+          },
+        },
+        SocketEvent.CLIENT_OP,
+      );
+    }
+  }
+
+  async create(inviteInfo) {
+    const relationEntities = await this.relationRepository.find({
+      where: {
+        userId: inviteInfo.userId,
+        friendsId: inviteInfo.friendsId,
+      },
+    });
+    if (relationEntities.length > 0) {
+    } else {
+      await this.relationRepository.save(inviteInfo);
+      const other = new CreateRelationDto();
+      other.userId = inviteInfo.friendsId;
+      other.friendsId = inviteInfo.userId;
+      await this.relationRepository.save(other);
+    }
   }
 }

@@ -18,7 +18,6 @@ import { UserChatroomEntity } from '../entities/user_chatroom.entity';
     BullModule.registerQueue({
       name: 'msg',
     }),
-    RedisCacheModule,
   ],
   controllers: [ChatRoomController],
   providers: [ChatRoomService, FileService, SocketService],

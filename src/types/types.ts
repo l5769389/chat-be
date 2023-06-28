@@ -19,7 +19,12 @@ enum SocketEvent {
 
   REMOTE_CONTROL = 'remote_control',
 
+  CLIENT_OP = 'client_op',
+}
+
+enum CLIENT_OP_SUB {
   ADD_FRIEND_INVITE = 'add_friend_invite',
+  FRESH_FRIENDS_LIST = 'fresh_friends_list',
 }
 
 enum VIDEO_ROOM_CHANGE_MSG_SUB {
@@ -53,4 +58,5 @@ export {
   MsgType,
   SocketEvent,
   VIDEO_ROOM_CHANGE_MSG_SUB,
+  CLIENT_OP_SUB,
 };

@@ -1,10 +1,8 @@
-import { IsBoolean, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsString } from 'class-validator';
 
 export class AnswerInviteDto {
-  @IsNumber()
-  userId: number;
   @IsString()
-  inviteId: string;
+  invite_key: string;
   @IsBoolean()
   answer: boolean;
 }
