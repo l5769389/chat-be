@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { readFile, writeFile } from 'fs';
 import * as path from 'path';
 import * as fs from 'fs';
-import { fileName } from 'typeorm-model-generator/dist/src/NamingStrategy';
 
 @Injectable()
 export class FileService {

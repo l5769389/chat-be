@@ -119,11 +119,16 @@ export class UserService {
       .getMany();
     const friends = await this.findFriends(userId);
     const friends_ids = friends.map((item) => item.userId);
+    const firends_ids_with_self = [...friends_ids, userId];
+    console.log('该用户的所有朋友id为', firends_ids_with_self);
     const filteredFromFriends = ans.filter((item) => {
-      if (!friends_ids.includes(item.userId)) {
+      if (!firends_ids_with_self.includes(item.userId)) {
         return item;
       }
     });
+    console.log(
+      `排除已经是朋友所有相关信息为：${JSON.stringify(filteredFromFriends)}`,
+    );
     const res = filteredFromFriends.map((item) => {
       item.password = '';
       return item;
