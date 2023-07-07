@@ -74,7 +74,13 @@ export class SocketService {
     }
   }
 
-  async joinUserToRoom({ createUserId, roomId, joinUserIds, chatRoomName }) {
+  async joinUserToRoom({
+    createUserId,
+    roomId,
+    joinUserIds,
+    chatRoomName,
+    joinUsersInfo,
+  }) {
     const timestamp = new Date().getTime().toString();
     const msg = {
       type: MsgFileType.Text,
@@ -91,6 +97,7 @@ export class SocketService {
         chatId: roomId,
         joinUserIds,
         msg,
+        joinUsersInfo,
       });
     }
   }
@@ -103,7 +110,7 @@ export class SocketService {
     chatId = fromUserId, // 该项是群的id
     joinUserIds = [], // 群的参加者id
     chatRoomName = '', // 群名称,
-    args = null,
+    ...args
   }) {
     //   如果客户端在线，那么直接发送过去，否则就储存起来，等上线后一次性全部发送。
     if (this.judgeUserIsOnline(toUserId)) {

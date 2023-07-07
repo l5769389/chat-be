@@ -9,6 +9,7 @@ import { SocketService } from '../socket/socket.service';
 import { ChatType, MsgFileType, MsgType } from '../types/types';
 import { UserChatroomEntity } from '../entities/user_chatroom.entity';
 import { CreateUserChatRoomDto } from './dto/create-user-chat-room.dto';
+import { json } from 'stream/consumers';
 
 @Injectable()
 export class ChatRoomService {
@@ -23,12 +24,14 @@ export class ChatRoomService {
   async create(createChatRoomDto: CreateChatRoomDto) {
     const {
       createUserId,
+      joinUsersInfo,
       joinUserId: joinIds,
       chatRoomName,
     } = createChatRoomDto;
     const timestamp = new Date().getTime();
     const roomId = `c:${createUserId}_join:${joinIds}_time:${timestamp}`;
     createChatRoomDto.roomId = roomId;
+    console.log(JSON.stringify(createChatRoomDto));
     await this.chatroomRepository.save(createChatRoomDto);
     const ids = joinIds.split(',').map((item) => Number.parseInt(item));
     //将每一个id记录到db中
@@ -42,6 +45,7 @@ export class ChatRoomService {
       roomId,
       joinUserIds: ids,
       chatRoomName,
+      joinUsersInfo,
     });
 
     return new Success({
