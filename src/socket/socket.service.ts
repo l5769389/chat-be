@@ -55,7 +55,7 @@ export class SocketService {
   }
 
   async msgServiceMulti(data: any, client: Socket) {
-    const { toChatRoomId, fromUserId, msg, joinUserIds } = data;
+    const { toChatRoomId, fromUserId, msg, joinUserId: joinUserIds } = data;
     console.log(`收到发送的群聊socket消息, ${JSON.stringify(data)}`);
     this.sendToGroup(fromUserId, toChatRoomId, msg, joinUserIds);
   }
