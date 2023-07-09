@@ -7,6 +7,12 @@ import { RedisCacheService } from 'src/redis-cache/redis-cache.service';
 import { ChatType, MsgFileType, MsgType, SocketEvent } from '../types/types';
 
 const socketMap = new Map<number, Socket>(); //登录进来的socket实例。
+interface msgServiceMultiType {
+  toChatRoomId: string;
+  fromUserId: number;
+  msg: any;
+  joinUserIds: Array<number>;
+}
 
 @Injectable()
 export class SocketService {
@@ -54,13 +60,19 @@ export class SocketService {
     });
   }
 
-  async msgServiceMulti(data: any, client: Socket) {
-    const { toChatRoomId, fromUserId, msg, joinUserId: joinUserIds } = data;
+  async msgServiceMulti(data: msgServiceMultiType, client: Socket) {
+    const { toChatRoomId, fromUserId, msg, joinUserIds: joinUserIds } = data;
     console.log(`收到发送的群聊socket消息, ${JSON.stringify(data)}`);
     this.sendToGroup(fromUserId, toChatRoomId, msg, joinUserIds);
   }
 
-  async sendToGroup(fromUserId, roomId, msg, joinUserIds: Array<number>) {
+  async sendToGroup(
+    fromUserId: number,
+    roomId,
+    msg,
+    joinUserIds: Array<number>,
+  ) {
+    console.log(joinUserIds)
     const excludeIds = joinUserIds.filter((item) => item !== fromUserId);
     for (const joinUserId of excludeIds) {
       this.sendMsgOnlineOrOffline({

@@ -29,7 +29,7 @@ const mysqlConfig = Object.assign({}, mysql, {
   type: 'mysql',
   entities: [UserEntity, RelationEntity, ChatroomEntity, UserChatroomEntity],
   synchronize: true,
-  logging: true, // 打开mysql的日志
+  logging: false, // 打开mysql的日志
 });
 const DbModule = TypeOrmModule.forRoot(mysqlConfig);
 
