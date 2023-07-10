@@ -3,7 +3,7 @@ http:
   port: 3000
 
 server:
-   host: &host '192.168.71.156'
+   host: &host '192.168.71.155'
 #   host: &host 'localhost'
 
 mysql:
