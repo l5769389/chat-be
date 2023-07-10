@@ -62,7 +62,7 @@ export class SocketService {
 
   async msgServiceMulti(data: msgServiceMultiType, client: Socket) {
     const { toChatRoomId, fromUserId, msg, joinUserIds: joinUserIds } = data;
-    console.log(`收到发送的群聊socket消息, ${JSON.stringify(data)}`);
+    console.log(`收到发送的群聊socket消息`);
     this.sendToGroup(fromUserId, toChatRoomId, msg, joinUserIds);
   }
 
@@ -72,7 +72,7 @@ export class SocketService {
     msg,
     joinUserIds: Array<number>,
   ) {
-    console.log(joinUserIds)
+    console.log(joinUserIds);
     const excludeIds = joinUserIds.filter((item) => item !== fromUserId);
     for (const joinUserId of excludeIds) {
       this.sendMsgOnlineOrOffline({
@@ -188,7 +188,6 @@ export class SocketService {
   }) {
     const client = socketMap.get(toUserId);
     console.log(`向${toUserId}发出消息:`);
-    console.log(eventName, fromUserId, msg, chatId, joinUserIds, chatRoomName);
     this.sendMsg(
       client,
       eventName,
@@ -212,7 +211,7 @@ export class SocketService {
     args = null,
   }) {
     if (msg.type === MsgFileType.Text) {
-      console.log(`对方离线，消息存入redis中，消息为:${JSON.stringify(msg)}`);
+      console.log(`对方离线，消息存入redis中`);
       const msgKey = `msg_${toUserId}`;
       await this.cacheManager.update(msgKey, {
         eventName,
@@ -279,7 +278,7 @@ export class SocketService {
 
   async findHistoryMsg(userId) {
     const history = JSON.parse(await this.cacheManager.get(`msg_${userId}`));
-    console.log(`该用户的历史消息为：${JSON.stringify(history)}`);
+    console.log(`该用户的历史消息为：`);
     return history;
   }
 

@@ -88,7 +88,6 @@ export class SocketGateway
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     console.log(`收到事件:${SocketEvent.ANSWER_INVITE}`);
-    console.log(`${JSON.stringify(data)}`);
     await this.socketService.answerInvite(client, data);
   }
 
