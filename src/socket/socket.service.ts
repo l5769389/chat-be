@@ -48,7 +48,7 @@ export class SocketService {
   }
 
   async msgServiceSingle(data: any, eventName) {
-    const { fromUserId, toUserId, msg } = data;
+    const { fromUserId, toUserId, msg, joinUserIds } = data;
     console.log(
       `收到socket消息,from:${fromUserId},to:${toUserId},event:${eventName}`,
     );
@@ -57,6 +57,7 @@ export class SocketService {
       fromUserId,
       toUserId,
       msg,
+      joinUserIds,
     });
   }
 
@@ -250,7 +251,15 @@ export class SocketService {
 
   async sendMsgHistory(
     toUserId,
-    { eventName = 'msg', fromUserId, msg, chatId, joinUserIds, chatRoomName },
+    {
+      eventName = 'msg',
+      fromUserId,
+      msg,
+      chatId,
+      joinUserIds,
+      chatRoomName,
+      ...args
+    },
   ) {
     const client = socketMap.get(toUserId);
     // 客户端上线后发送历史消息。
@@ -267,6 +276,7 @@ export class SocketService {
       chatId,
       joinUserIds,
       chatRoomName,
+      args,
     );
   }
 
