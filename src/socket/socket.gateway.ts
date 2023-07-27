@@ -31,10 +31,11 @@ export class SocketGateway
   @WebSocketServer() server: Server;
 
   handleConnection(client: Socket) {
-    this.server.on('connection', async (socket: Socket) => {
-      //
-      console.log('connect');
-    });
+    console.log('connect');
+    // this.server.on('connection', async (socket: Socket) => {
+    //   //
+    //   console.log('connect');
+    // });
   }
 
   @SubscribeMessage('connection')
@@ -42,7 +43,7 @@ export class SocketGateway
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ) {
-    console.log('connect');
+    console.log('connection');
   }
 
   @SubscribeMessage(SocketEvent.CHAT_MSG_SINGLE)
